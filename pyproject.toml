@@ -21,4 +21,4 @@ dependencies = [
 dev = ["pytest", "black", "isort", "mypy"]
 
 [tool.setuptools]
-packages = ["dns_server"]
+packages = ["toy_dns_server"]

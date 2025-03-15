@@ -26,7 +26,7 @@ server:
 
       security:
         # Custom TLS certificate and key paths (if using HTTPS).
-        # Default: "/etc/dns-server/tls/cert.pem" and "/etc/dns-server/tls/key.pem"
+        # Default: "/etc/toy-dns-server/tls/cert.pem" and "/etc/toy-dns-server/tls/key.pem"
         # certificate_file: "/path/to/custom/cert.pem"
         # key_file: "/path/to/custom/key.pem"
 
