@@ -1,0 +1,74 @@
+# Default configuration file for the DNS + DoH server.
+# This file should not be modified. Any user-specific changes should be
+# placed in `config.yml`, which will override values from this file.
+
+server:
+  dns:
+    # Address where the DNS server listens for UDP/TCP queries.
+    address: "0.0.0.0:53"
+
+  doh:
+    # Mode of operation for DNS-over-HTTPS:
+    # - "https" → Serve DoH over HTTPS with TLS
+    # - "http"  → Serve DoH over plain HTTP (useful for reverse proxy setups)
+    mode: "https"
+
+    http:
+      # Address where DoH over HTTP listens (only used if mode is "http").
+      listen_address: "127.0.0.1:8053"
+
+    https:
+      # Address where DoH over HTTPS listens (only used if mode is "https").
+      listen_address: "0.0.0.0:443"
+
+      security:
+        # TLS certificate file path.
+        certificate_file: "/etc/dns-server/tls/cert.pem"
+
+        # TLS private key file path.
+        key_file: "/etc/dns-server/tls/key.pem"
+
+        # Minimum and maximum supported TLS versions.
+        min_tls_version: "TLS12"
+        max_tls_version: "TLS13"
+
+resolver:
+  upstream:
+    # List of upstream DNS servers used for resolving queries.
+    servers:
+      - "8.8.8.8"
+      - "1.1.1.1"
+      - "9.9.9.9"
+
+    # Maximum time (in milliseconds) to wait for a response from an upstream resolver.
+    timeout_ms: 2000
+
+  cache:
+    # Enables or disables DNS caching.
+    enabled: true
+
+    # Cache Time-To-Live (TTL) in seconds.
+    ttl_seconds: 300
+
+    # Maximum number of records stored in the cache.
+    max_entries: 1000
+
+  security:
+    # Enable DNSSEC validation.
+    dnssec_validation: true
+
+logging:
+  # Log verbosity level: "debug", "info", "warn", "error"
+  level: "info"
+
+  # File paths for logs.
+  stdout_log_file: "/var/log/dns-server-stdout.log"
+  stderr_log_file: "/var/log/dns-server-stderr.log"
+
+metrics:
+  # Enable or disable metrics collection.
+  enabled: true
+
+  exporter:
+    # Address where the metrics exporter (e.g., Prometheus) listens.
+    listen_address: "127.0.0.1:9090"

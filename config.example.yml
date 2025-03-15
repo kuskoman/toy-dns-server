@@ -1,0 +1,73 @@
+# User configuration file for the DNS + DoH server.
+# This file overrides the default settings from `config.default.yml`.
+# Uncomment and modify the sections you want to change.
+
+server:
+  dns:
+    # Set a custom address for the DNS server.
+    # Default: "0.0.0.0:53"
+    # address: "127.0.0.1:5353"
+
+  doh:
+    # Change the mode of operation for DoH.
+    # Options: "http" (for reverse proxy) or "https" (secure mode with TLS).
+    # Default: "https"
+    # mode: "http"
+
+    http:
+      # Override the listening address for DoH over HTTP.
+      # Default: "127.0.0.1:8053"
+      # listen_address: "127.0.0.1:9053"
+
+    https:
+      # Override the listening address for DoH over HTTPS.
+      # Default: "0.0.0.0:443"
+      # listen_address: "0.0.0.0:8443"
+
+      security:
+        # Custom TLS certificate and key paths (if using HTTPS).
+        # Default: "/etc/dns-server/tls/cert.pem" and "/etc/dns-server/tls/key.pem"
+        # certificate_file: "/path/to/custom/cert.pem"
+        # key_file: "/path/to/custom/key.pem"
+
+resolver:
+  upstream:
+    # Define a custom list of upstream DNS resolvers.
+    # Default: ["8.8.8.8", "1.1.1.1", "9.9.9.9"]
+    # servers:
+    #   - "9.9.9.9"
+    #   - "208.67.222.222"
+
+  cache:
+    # Enable or disable DNS caching.
+    # Default: true
+    # enabled: false
+
+    # Set a custom cache TTL in seconds.
+    # Default: 300
+    # ttl_seconds: 600
+
+    # Change the cache size (number of records stored).
+    # Default: 1000
+    # max_entries: 5000
+
+logging:
+  # Set the logging level.
+  # Options: "debug", "info", "warn", "error"
+  # Default: "info"
+  # level: "debug"
+
+  # Change log file paths.
+  # Default: "/var/log/dns-server-stdout.log" and "/var/log/dns-server-stderr.log"
+  # stdout_log_file: "/custom/logs/dns-stdout.log"
+  # stderr_log_file: "/custom/logs/dns-stderr.log"
+
+metrics:
+  # Enable or disable metrics collection.
+  # Default: true
+  # enabled: false
+
+  exporter:
+    # Set a custom metrics listening address.
+    # Default: "127.0.0.1:9090"
+    # listen_address: "0.0.0.0:9191"
