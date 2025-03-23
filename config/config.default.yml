@@ -76,6 +76,7 @@ logging:
 
   # Log date format.
   date_format: "%Y-%m-%d %H:%M:%S"
+
 metrics:
   # Enable or disable metrics collection.
   enabled: true

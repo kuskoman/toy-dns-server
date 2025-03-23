@@ -109,7 +109,7 @@ class Bootstraper():
             return
 
         metrics_server = Exporter(self._config.metrics)
-        metrics_server.start()
+        metrics_server.run()
 
     def _configure_logging(self):
         base_logger.reconfigure_logger(self._config.logging)

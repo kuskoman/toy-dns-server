@@ -8,4 +8,4 @@ server:
         key_file: "scripts/certs/localhost.key"
 
 logging:
-  level: "debug"
+  level: "info"
