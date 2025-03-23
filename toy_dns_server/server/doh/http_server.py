@@ -11,6 +11,7 @@ class DoHHTTPServer:
 
     def __init__(self, config: DoHHTTPConfig, resolver: DNSResolver):
         self._logger = Logger(self)
+        self._logger.debug("Creating DoH HTTP server")
         host, port = config.listen_address.split(":")
         handler_cls = make_doh_handler(resolver)
         self._httpd = ThreadingHTTPServer((host, int(port)), handler_cls)

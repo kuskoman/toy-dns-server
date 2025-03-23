@@ -8,7 +8,12 @@ class DNSOverHTTPHandler(BaseHTTPRequestHandler):
     resolver: DNSResolver
     __logger: Logger
 
+    def __init__(self, request, client_address, server):
+        self.__logger = Logger(self)
+        super().__init__(request, client_address, server)
+
     def do_POST(self):
+        self.__logger.debug("Handling DoH query")
         content_type = self.headers.get("Content-Type")
         if content_type != "application/dns-message":
             self.send_error(415, "Unsupported Media Type")

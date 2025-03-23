@@ -12,6 +12,7 @@ class DoHHTTPSServer:
 
     def __init__(self, config: DoHHTTPSConfig, resolver: DNSResolver):
         self._logger = Logger(self)
+        self._logger.debug("Creating DoH HTTPS server")
         host, port = config.listen_address.split(":")
 
         handler_cls = make_doh_handler(resolver)

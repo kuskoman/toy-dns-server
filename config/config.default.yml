@@ -65,7 +65,7 @@ resolver:
 
 logging:
   # Log verbosity level: "debug", "info", "warn", "error"
-  level: "info"
+  level: "debug"
 
   # File paths for logs.
   stdout_log_file: "stdout"

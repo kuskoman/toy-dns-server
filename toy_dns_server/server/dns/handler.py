@@ -14,10 +14,12 @@ class DNSRequestHandler(socketserver.BaseRequestHandler):
         self.__resolver = resolver
 
     def handle(self):
+        self.__logger.debug("Handling DNS query")
+
         data, socket_instance = self.request
         client_ip, client_port = self.client_address
 
-        self.__logger.info(f"Received DNS query from {client_ip}:{client_port}")
+        self.__logger.debug(f"Received DNS query from {client_ip}:{client_port}")
 
         try:
             dns_request = DNSRecord.parse(data)
