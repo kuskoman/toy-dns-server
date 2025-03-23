@@ -17,23 +17,28 @@ class DNSSECValidator:
         try:
             msg = dns.message.from_wire(response_wire)
             name = msg.question[0].name
-            rrsets = {}
-            rrsigs = {}
 
-            for rr in msg.answer:
-                if rr.rdtype == dns.rdatatype.RRSIG:
-                    rrsigs[rr.covered] = rr
-                else:
-                    rrsets[rr.rdtype] = rr
+            for rrset in msg.answer:
+                if rrset.rdtype == dns.rdatatype.RRSIG:
+                    continue
 
-            for rtype, rrset in rrsets.items():
-                rrsig = rrsigs.get(rtype)
-                if not rrsig:
-                    self._logger.warn(f"No RRSIG for {rtype}")
+                # finding RRSIG for this RRset
+                covered_type = rrset.rdtype
+                rrsig_rrset = next(
+                    (sig for sig in msg.answer if sig.rdtype == dns.rdatatype.RRSIG and sig.name == rrset.name),
+                    None
+                )
+                if not rrsig_rrset:
+                    self._logger.warn(f"No RRSIG for {covered_type}")
                     return False
 
-                dnskey = self._get_dnskey(name)
-                dns.dnssec.validate(rrset, rrsig, {name: dnskey})
+                rrsig = next((r for r in rrsig_rrset if r.covered == covered_type), None)
+                if not rrsig:
+                    self._logger.warn(f"No matching RRSIG for type {covered_type}")
+                    return False
+
+                dnskey_rrset = self._get_dnskey(name)
+                dns.dnssec.validate(rrset, rrsig, {name: dnskey_rrset})
 
             self._logger.info("DNSSEC validation successful")
             return True
@@ -41,6 +46,7 @@ class DNSSECValidator:
         except Exception as e:
             self._logger.warn(f"DNSSEC validation failed: {e}")
             return False
+
 
     def _get_dnskey(self, name: dns.name.Name):
         answer = dns.resolver.resolve(name, 'DNSKEY')

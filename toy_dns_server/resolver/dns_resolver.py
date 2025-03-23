@@ -1,12 +1,13 @@
 import socket
 import random
 from typing import Optional, Union
-from dnslib import DNSRecord
+from dnslib import DNSRecord, EDNS0, RCODE, DNSHeader
 
 
 from toy_dns_server.log.logger import Logger
 from toy_dns_server.config.schema import CacheConfig, ResolverConfig
 from toy_dns_server.cache.cache import DNSCache
+from toy_dns_server.security.dnssec import DNSSECValidator
 
 
 class DNSResolver:
@@ -14,6 +15,7 @@ class DNSResolver:
     _timeout_seconds: float
     _upstream_servers: list[str]
     _cache: Union[DNSCache, None] = None
+    _dnssec_validator: Optional[DNSSECValidator] = None
 
     def __init__(self, config: ResolverConfig):
         self._logger = Logger(self)
@@ -28,9 +30,19 @@ class DNSResolver:
             self._logger.info("DNS cache is enabled")
             self._initialize_cache(config.cache)
 
-    def resolve(self, query: bytes) -> bytes:
-        record = DNSRecord.parse(query)
-        cached_response = self._get_from_cache(query)
+        if config.security.dnssec_validation:
+            self._logger.info("DNSSEC validation is enabled")
+            self._dnssec_validator = DNSSECValidator()
+
+    def resolve(self, original_query: bytes) -> bytes:
+        record = DNSRecord.parse(original_query)
+        if self._dnssec_validator:
+            record.add_ar(EDNS0(flags="do",udp_len=4096))
+            record.header.ad = 1
+
+        query = record.pack()
+
+        cached_response = self._get_from_cache(record)
         if cached_response:
             cached_response.header.id = record.header.id
             return cached_response.pack()
@@ -46,12 +58,21 @@ class DNSResolver:
                     server_str = str(server)
                     sock.sendto(query, (server_str, 53))
                     response, _ = sock.recvfrom(4096)
+                    if self._dnssec_validator and not self._dnssec_validator.validate(response):
+                        self._logger.warn("DNSSEC validation failed")
+                        continue
                     self._set_to_cache(record, response)
                     return response
             except (socket.timeout, socket.error) as e:
                 self._logger.warn(f"Failed to get response from server {server}: {e}")
 
-        self._logger.fatal("All upstream servers failed to respond")
+        self._logger.error("All upstream servers failed to respond, or failed DNSSEC validation")
+
+        servfail = DNSRecord(
+            DNSHeader(id=record.header.id, qr=1, ra=1, rcode=RCODE.SERVFAIL),
+            q=record.q
+        )
+        return servfail.pack()
 
     def _initialize_cache(self, cache_config: CacheConfig):
         if not cache_config.enabled:
@@ -61,11 +82,9 @@ class DNSResolver:
         self._cache = DNSCache(cache_config.ttl_seconds, cache_config.max_entries)
         self._logger.info("DNS cache initialized")
 
-    def _get_from_cache(self, query: bytes) -> Optional[DNSRecord]:
+    def _get_from_cache(self, record: DNSRecord) -> Optional[DNSRecord]:
         if not self._cache:
             return None
-
-        record = DNSRecord.parse(query)
 
         key = self._query_cache_key(record)
         if not key:
