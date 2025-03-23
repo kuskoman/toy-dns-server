@@ -50,6 +50,9 @@ class DNSResolver:
         servers = self._upstream_servers[:]
         random.shuffle(servers)
 
+        failed_dnssec = 0
+        failed_to_resolve = 0
+
         for server in servers:
             self._logger.debug(f"Attempting to forward query to upstream server: {server}")
             try:
@@ -60,13 +63,15 @@ class DNSResolver:
                     response, _ = sock.recvfrom(4096)
                     if self._dnssec_validator and not self._dnssec_validator.validate(response):
                         self._logger.warn("DNSSEC validation failed")
+                        failed_dnssec += 1
                         continue
                     self._set_to_cache(record, response)
                     return response
             except (socket.timeout, socket.error) as e:
                 self._logger.warn(f"Failed to get response from server {server}: {e}")
+                failed_to_resolve += 1
 
-        self._logger.error("All upstream servers failed to respond, or failed DNSSEC validation")
+        self._logger.error(f"Failed to resolve query {record.q.qname}. Failed DNSSEC: {failed_dnssec}, Failed to resolve: {failed_to_resolve}")
 
         servfail = DNSRecord(
             DNSHeader(id=record.header.id, qr=1, ra=1, rcode=RCODE.SERVFAIL),

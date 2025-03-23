@@ -18,27 +18,14 @@ class DNSSECValidator:
             msg = dns.message.from_wire(response_wire)
             name = msg.question[0].name
 
+            self._logger.debug(f"Validating DNSSEC for {name}")
+
             for rrset in msg.answer:
                 if rrset.rdtype == dns.rdatatype.RRSIG:
                     continue
 
-                # finding RRSIG for this RRset
-                covered_type = rrset.rdtype
-                rrsig_rrset = next(
-                    (sig for sig in msg.answer if sig.rdtype == dns.rdatatype.RRSIG and sig.name == rrset.name),
-                    None
-                )
-                if not rrsig_rrset:
-                    self._logger.warn(f"No RRSIG for {covered_type}")
+                if not self._validate_rrset_with_rrsig(msg, rrset):
                     return False
-
-                rrsig = next((r for r in rrsig_rrset if r.covered == covered_type), None)
-                if not rrsig:
-                    self._logger.warn(f"No matching RRSIG for type {covered_type}")
-                    return False
-
-                dnskey_rrset = self._get_dnskey(name)
-                dns.dnssec.validate(rrset, rrsig, {name: dnskey_rrset})
 
             self._logger.info("DNSSEC validation successful")
             return True
@@ -47,7 +34,30 @@ class DNSSECValidator:
             self._logger.warn(f"DNSSEC validation failed: {e}")
             return False
 
+    def _validate_rrset_with_rrsig(self, msg: dns.message.Message, rrset: dns.rrset.RRset) -> bool:
+        covered_type = rrset.rdtype
+
+        rrsig_rrset = [
+            rdata
+            for rr in msg.answer
+            if rr.rdtype == dns.rdatatype.RRSIG and rr.name == rrset.name
+            for rdata in rr
+        ]
+
+        rrsig = next((r for r in rrsig_rrset if r.covered == covered_type), None)
+        if not rrsig:
+            self._logger.warn(f"No RRSIG for {covered_type}")
+            return False
+
+        dnskey_rrset = self._get_dnskey(msg.question[0].name)
+        dns.dnssec.validate(rrset, rrsig, {msg.question[0].name: dnskey_rrset})
+        return True
 
     def _get_dnskey(self, name: dns.name.Name):
-        answer = dns.resolver.resolve(name, 'DNSKEY')
-        return answer
+        try:
+            zone = name.parent() if name.labels > 2 else name
+            answer = dns.resolver.resolve(zone, 'DNSKEY')
+            return answer
+        except Exception as e:
+            self._logger.warn(f"Failed to retrieve DNSKEY for {name}: {e}")
+            raise
