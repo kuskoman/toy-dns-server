@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 
 import requests
 from dnslib import DNSRecord
@@ -9,12 +9,16 @@ raw_query = q.pack()
 headers = {
     "Content-Type": "application/dns-message"
 }
-response = requests.post("http://127.0.0.1:8053/", data=raw_query, headers=headers)
+response = requests.post(
+    "https://localhost:443/",
+    data=raw_query,
+    headers=headers,
+    verify="./scripts/certs/localhost.crt"
+)
 
 print("Status:", response.status_code)
 print("Response length:", len(response.content))
 
-# Parse response
 if response.status_code == 200:
     reply = DNSRecord.parse(response.content)
     print("Answer:")
@@ -22,4 +26,3 @@ if response.status_code == 200:
         print(f"{rr.rname} -> {rr.rdata}")
 else:
     print(response.text)
-
