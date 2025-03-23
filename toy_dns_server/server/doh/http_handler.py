@@ -6,14 +6,14 @@ import traceback
 
 class DNSOverHTTPHandler(BaseHTTPRequestHandler):
     resolver: DNSResolver
-    __logger: Logger
+    _logger: Logger
 
     def __init__(self, request, client_address, server):
-        self.__logger = Logger(self)
+        self._logger = Logger(self)
         super().__init__(request, client_address, server)
 
     def do_POST(self):
-        self.__logger.debug("Handling DoH query")
+        self._logger.debug("Handling DoH query")
         content_type = self.headers.get("Content-Type")
         if content_type != "application/dns-message":
             self.send_error(415, "Unsupported Media Type")
@@ -23,9 +23,9 @@ class DNSOverHTTPHandler(BaseHTTPRequestHandler):
             content_length = int(self.headers.get("Content-Length", 0))
             query_data = self.rfile.read(content_length)
 
-            self.__logger.debug(f"Received DoH query from {self.client_address[0]}:{self.client_address[1]}")
+            self._logger.debug(f"Received DoH query from {self.client_address[0]}:{self.client_address[1]}")
             dns_request = DNSRecord.parse(query_data)
-            self.__logger.debug(f"Parsed DNS query: {dns_request.q.qname}")
+            self._logger.debug(f"Parsed DNS query: {dns_request.q.qname}")
 
             response_data = self.resolver.resolve(query_data)
 
@@ -35,10 +35,10 @@ class DNSOverHTTPHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(response_data)
         except Exception as e:
-            self.__logger.error(f"Failed to handle DoH query: {e}\n{traceback.format_exc()}")
+            self._logger.error(f"Failed to handle DoH query: {e}\n{traceback.format_exc()}")
             self.send_error(500, "Internal Server Error")
 
     def log_message(self, format, *args):
-        self.__logger.debug(format % args)
+        self._logger.debug(format % args)
         return
 

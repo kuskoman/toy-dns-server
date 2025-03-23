@@ -25,7 +25,7 @@ class BaseLogger:
         self.__log_dir_created = False
         self.__reconfigured = False
 
-    def __get_default_config(self) -> LoggingConfig:
+    def _get_default_config(self) -> LoggingConfig:
         return LoggingConfig(
             level="debug",
             stdout_log_file=self.DEFAULT_STDOUT_LOG,
@@ -34,7 +34,7 @@ class BaseLogger:
             date_format=DEFAULT_DATE_FORMAT,
         )
 
-    def __create_log_dirs(self):
+    def _create_log_dirs(self):
         if self.__log_dir_created:
             return
 
@@ -45,9 +45,9 @@ class BaseLogger:
         self.__log_dir_created = True
 
     def handle_configuration_error(self):
-        config = self.__get_default_config()
+        config = self._get_default_config()
         self.reconfigure_logger(config)
-        self.__flush_logs()
+        self._flush_logs()
 
     def log(self, message: str, level: int, logger_name: str):
         if not self.__reconfigured:
@@ -64,7 +64,7 @@ class BaseLogger:
         self.__stderr_log_path = config.stderr_log_file
         self.__log_formatter = ColoredFormatter(config.log_format, config.date_format)
 
-        self.__create_log_dirs()
+        self._create_log_dirs()
 
         self.__stdout_logger.handlers.clear()
         self.__stderr_logger.handlers.clear()
@@ -86,9 +86,9 @@ class BaseLogger:
         self.__stdout_logger.addHandler(handler)
 
         self.__reconfigured = True
-        self.__flush_logs()
+        self._flush_logs()
 
-    def __flush_logs(self):
+    def _flush_logs(self):
         for message, level, logger_name in self.__log_buffer:
             self.log(message, level, logger_name)
         self.__log_buffer.clear()

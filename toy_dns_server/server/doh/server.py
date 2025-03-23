@@ -5,15 +5,16 @@ from toy_dns_server.server.doh.https_server import DoHHTTPSServer
 from toy_dns_server.resolver.dns_resolver import DNSResolver
 
 class DoHServer:
-    __config: ConfigSchema
+    _config: ConfigSchema
+    _server = None
 
     def __init__(self, config: ConfigSchema):
-        self.__config = config
-        self.__server = None
+        self._config = config
+        self._server = None
 
     def run(self):
-        doh_config = self.__config.server.doh
-        resolver_config = self.__config.resolver
+        doh_config = self._config.server.doh
+        resolver_config = self._config.resolver
         resolver = DNSResolver(resolver_config)
         if doh_config.mode == "http":
             self._server = DoHHTTPServer(doh_config.http, resolver)
@@ -24,5 +25,5 @@ class DoHServer:
         self._server.run()
 
     def stop(self):
-        if self.__server:
-            self.__server.stop()
+        if self._server:
+            self._server.stop()

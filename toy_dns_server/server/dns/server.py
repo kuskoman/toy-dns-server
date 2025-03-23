@@ -11,9 +11,9 @@ class ThreadedUDPServer(socketserver.ThreadingMixIn, socketserver.UDPServer):
     allow_reuse_address = True
 
 class DNSServer:
-    __logger: Logger
-    __resolver: DNSResolver
-    __server: ThreadedUDPServer
+    _logger: Logger
+    _resolver: DNSResolver
+    _server: ThreadedUDPServer
 
     def __init__(self, config: ConfigSchema):
         dns_server_config = config.server.dns
@@ -21,16 +21,16 @@ class DNSServer:
         host, port_str = dns_server_config.address.split(":")
         port = int(port_str)
 
-        self.__logger = Logger(self)
-        self.__resolver = DNSResolver(resolver_config)
-        self.__server = ThreadedUDPServer((host, port), lambda *args: DNSRequestHandler(self.__resolver))
+        self._logger = Logger(self)
+        self._resolver = DNSResolver(resolver_config)
+        self._server = ThreadedUDPServer((host, port), lambda *args: DNSRequestHandler(self._resolver))
 
     def run(self):
-        self.__logger.info(f"Starting DNS server on {self.__server.server_address}")
-        self.__server.serve_forever()
+        self._logger.info(f"Starting DNS server on {self._server.server_address}")
+        self._server.serve_forever()
 
     def stop(self):
-        self.__logger.info("Stopping DNS server")
-        self.__server.shutdown()
-        self.__server.server_close()
-        self.__logger.info("DNS server stopped")
+        self._logger.info("Stopping DNS server")
+        self._server.shutdown()
+        self._server.server_close()
+        self._logger.info("DNS server stopped")

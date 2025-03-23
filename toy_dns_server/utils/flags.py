@@ -15,7 +15,7 @@ class FlagsManager:
     DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "config.default.yml")
 
     def get_flags_config(self):
-        flags_dict = self.__parse_flags()
+        flags_dict = self._parse_flags()
 
         flagsConfig = FlagsConfig(
             default_config_path=self.DEFAULT_CONFIG_PATH,
@@ -23,7 +23,7 @@ class FlagsManager:
         )
         return flagsConfig
 
-    def __parse_flags(self):
+    def _parse_flags(self):
         parser = argparse.ArgumentParser(description="Toy DNS Server")
 
         parser.add_argument(
