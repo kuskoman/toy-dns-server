@@ -53,8 +53,8 @@ resolver:
     # Enables or disables DNS caching.
     enabled: true
 
-    # Cache Time-To-Live (TTL) in seconds.
-    ttl_seconds: 300
+    # Cache Time-To-Live (TTL) in seconds. Can be set to "auto" to use the TTL from the upstream resolver.
+    ttl_seconds: auto
 
     # Maximum number of records stored in the cache.
     max_entries: 1000

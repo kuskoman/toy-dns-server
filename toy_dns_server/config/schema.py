@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, IPvAnyAddress
-from typing import List, Literal
+from typing import List, Literal, Union
 
 
 class DNSConfig(BaseModel):
@@ -42,7 +42,7 @@ class UpstreamConfig(BaseModel):
 
 class CacheConfig(BaseModel):
     enabled: bool
-    ttl_seconds: int
+    ttl_seconds: Union[int, Literal["auto"]]
     max_entries: int
 
 

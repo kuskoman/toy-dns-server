@@ -52,8 +52,8 @@ resolver:
     # enabled: false
 
     # Set a custom cache TTL in seconds.
-    # Default: 300
-    # ttl_seconds: 600
+    # Default: auto (use TTL from upstream resolver)
+    # ttl_seconds: 300
 
     # Change the cache size (number of records stored).
     # Default: 1000

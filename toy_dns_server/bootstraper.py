@@ -102,7 +102,7 @@ class Bootstraper():
                         self.stop()
                         break
 
-                time.sleep(1)
+                time.sleep(200)
         except KeyboardInterrupt:
             self._logger.debug("Received KeyboardInterrupt. Stopping thread monitoring.")
             self.stop()

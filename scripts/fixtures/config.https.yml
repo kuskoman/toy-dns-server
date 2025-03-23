@@ -1,7 +1,4 @@
 server:
-  dns:
-    enabled: false
-
   doh:
     mode: "https"
 
@@ -9,3 +6,6 @@ server:
       security:
         certificate_file: "scripts/certs/localhost.crt"
         key_file: "scripts/certs/localhost.key"
+
+logging:
+  level: "debug"

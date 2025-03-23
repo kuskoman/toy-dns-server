@@ -1,13 +1,19 @@
 import socket
 import random
+from typing import Optional, Union
+from dnslib import DNSRecord
+
 
 from toy_dns_server.log.logger import Logger
-from toy_dns_server.config.schema import ResolverConfig
+from toy_dns_server.config.schema import CacheConfig, ResolverConfig
+from toy_dns_server.cache.cache import DNSCache
+
 
 class DNSResolver:
     _logger: Logger
     _timeout_seconds: float
     _upstream_servers: list[str]
+    _cache: Union[DNSCache, None] = None
 
     def __init__(self, config: ResolverConfig):
         self._logger = Logger(self)
@@ -15,7 +21,18 @@ class DNSResolver:
         self._timeout_seconds = upstream_config.timeout_ms / 1000
         self._upstream_servers = upstream_config.servers
 
+        if config.cache is None:
+            self._logger.warn("No cache configuration provided")
+
+        if config.cache.enabled:
+            self._logger.info("DNS cache is enabled")
+            self._initialize_cache(config.cache)
+
     def resolve(self, query: bytes) -> bytes:
+        cached_response = self._get_from_cache(query)
+        if cached_response:
+            return cached_response
+
         servers = self._upstream_servers[:]
         random.shuffle(servers)
 
@@ -27,8 +44,55 @@ class DNSResolver:
                     server_str = str(server)
                     sock.sendto(query, (server_str, 53))
                     response, _ = sock.recvfrom(4096)
+                    self._set_to_cache(query, response)
                     return response
             except (socket.timeout, socket.error) as e:
-                self._logger.warning(f"Failed to get response from server {server}: {e}")
+                self._logger.warn(f"Failed to get response from server {server}: {e}")
 
         self._logger.fatal("All upstream servers failed to respond")
+
+    def _initialize_cache(self, cache_config: CacheConfig):
+        if not cache_config.enabled:
+            self._logger.info("DNS cache is disabled")
+            return
+
+        self._cache = DNSCache(cache_config.ttl_seconds, cache_config.max_entries)
+        self._logger.info("DNS cache initialized")
+
+    def _get_from_cache(self, query: bytes) -> Union[bytes, None]:
+        if not self._cache:
+            return None
+
+        key = self._query_cache_key(query)
+        if not key:
+            return None
+
+        response_data = self._cache.get(key)
+        if response_data:
+            self._logger.debug("Cache hit")
+            return response_data
+
+        self._logger.debug("Cache miss")
+        return None
+
+    def _set_to_cache(self, query: bytes, response_data: bytes):
+        if not self._cache:
+            return
+
+        key = self._query_cache_key(query)
+        if not key:
+            return
+
+        self._cache.set(key, response_data)
+        self._logger.debug("Cached response")
+
+
+    def _query_cache_key(self, query: bytes) -> Optional[str]:
+        try:
+            record = DNSRecord.parse(query)
+            q = record.q
+            return f"{str(q.qname)}|{q.qtype}|{q.qclass}"
+        except Exception as e:
+            self._logger.warn(f"Failed to parse DNS query for cache key: {e}")
+            self._logger.debug(f"Raw query (hex): {query.hex()}")
+            return None
