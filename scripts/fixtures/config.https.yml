@@ -1,0 +1,11 @@
+server:
+  dns:
+    enabled: false
+
+  doh:
+    mode: "https"
+
+    https:
+      security:
+        certificate_file: "../scripts/fixtures/localhost.crt"
+        key_file: "../scripts/fixtures/localhost.key"
