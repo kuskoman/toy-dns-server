@@ -16,11 +16,11 @@ class FlagsManager:
     def get_flags_config(self):
         flags_dict = self._parse_flags()
 
-        flagsConfig = FlagsConfig(
+        flags_config = FlagsConfig(
             default_config_path=self.DEFAULT_CONFIG_PATH,
             user_config_path=flags_dict["config"]
         )
-        return flagsConfig
+        return flags_config
 
     def _parse_flags(self):
         parser = argparse.ArgumentParser(description="Toy DNS Server")
@@ -32,4 +32,5 @@ class FlagsManager:
         )
 
         flags_dict = vars(parser.parse_args())
+
         return flags_dict
