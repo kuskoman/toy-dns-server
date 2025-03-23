@@ -1,3 +1,4 @@
+from threading import Thread
 from toy_dns_server.config.loader import ConfigLoader, ConfigSchema
 from toy_dns_server.log.logger import Logger
 from toy_dns_server.log.base_logger import base_logger
@@ -44,7 +45,10 @@ class Bootstraper():
 
         self.__logger.info("Starting DNS server...")
         self.__dns_server = DNSServer(self.__config)
-        self.__dns_server.run()
+
+        thread = Thread(target=self.__dns_server.run)
+        thread.start()
+
 
     def __configure_logging(self):
         base_logger.reconfigure_logger(self.__config.logging)
