@@ -7,6 +7,8 @@ from toy_dns_server.log.base_logger import base_logger
 from toy_dns_server.server.dns.server import DNSServer
 from toy_dns_server.server.doh.server import DoHServer
 
+from toy_dns_server.metrics.exporter import Exporter
+
 class Bootstraper():
     _logger: Logger
     _running: bool = False
@@ -37,6 +39,7 @@ class Bootstraper():
         self._load_config()
 
         self._configure_logging()
+        self._start_metrics_server()
         self._start_dns_server()
         self._start_doh_server()
 
@@ -95,6 +98,18 @@ class Bootstraper():
 
             future = self._executor.submit(self.__doh_server.run)
             self._futures.append(future)
+
+    def _start_metrics_server(self):
+        if self._config.metrics is None:
+            self._logger.warn("No metrics server configuration provided. Skipping metrics server initialization.")
+            return
+
+        if not self._config.metrics.enabled:
+            self._logger.info("Metrics server is disabled. Skipping metrics server initialization.")
+            return
+
+        metrics_server = Exporter(self._config.metrics)
+        metrics_server.start()
 
     def _configure_logging(self):
         base_logger.reconfigure_logger(self._config.logging)
