@@ -29,9 +29,11 @@ class DNSResolver:
             self._initialize_cache(config.cache)
 
     def resolve(self, query: bytes) -> bytes:
+        record = DNSRecord.parse(query)
         cached_response = self._get_from_cache(query)
         if cached_response:
-            return cached_response
+            cached_response.header.id = record.header.id
+            return cached_response.pack()
 
         servers = self._upstream_servers[:]
         random.shuffle(servers)
@@ -44,7 +46,7 @@ class DNSResolver:
                     server_str = str(server)
                     sock.sendto(query, (server_str, 53))
                     response, _ = sock.recvfrom(4096)
-                    self._set_to_cache(query, response)
+                    self._set_to_cache(record, response)
                     return response
             except (socket.timeout, socket.error) as e:
                 self._logger.warn(f"Failed to get response from server {server}: {e}")
@@ -59,11 +61,13 @@ class DNSResolver:
         self._cache = DNSCache(cache_config.ttl_seconds, cache_config.max_entries)
         self._logger.info("DNS cache initialized")
 
-    def _get_from_cache(self, query: bytes) -> Union[bytes, None]:
+    def _get_from_cache(self, query: bytes) -> Optional[DNSRecord]:
         if not self._cache:
             return None
 
-        key = self._query_cache_key(query)
+        record = DNSRecord.parse(query)
+
+        key = self._query_cache_key(record)
         if not key:
             return None
 
@@ -75,7 +79,7 @@ class DNSResolver:
         self._logger.debug("Cache miss")
         return None
 
-    def _set_to_cache(self, query: bytes, response_data: bytes):
+    def _set_to_cache(self, query: DNSRecord, response_data: bytes):
         if not self._cache:
             return
 
@@ -87,12 +91,10 @@ class DNSResolver:
         self._logger.debug("Cached response")
 
 
-    def _query_cache_key(self, query: bytes) -> Optional[str]:
+    def _query_cache_key(self, record: DNSRecord) -> Optional[str]:
         try:
-            record = DNSRecord.parse(query)
             q = record.q
             return f"{str(q.qname)}|{q.qtype}|{q.qclass}"
         except Exception as e:
             self._logger.warn(f"Failed to parse DNS query for cache key: {e}")
-            self._logger.debug(f"Raw query (hex): {query.hex()}")
             return None
