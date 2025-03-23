@@ -2,10 +2,9 @@ import os
 import yaml
 from pydantic import ValidationError
 from toy_dns_server.config.schema import ConfigSchema
-from toy_dns_server.log.logger import Logger
 from toy_dns_server.utils.flags import FlagsManager
 
-
+from toy_dns_server.log.logger import Logger
 
 class ConfigLoader:
     CONFIG_DIR = "config"
