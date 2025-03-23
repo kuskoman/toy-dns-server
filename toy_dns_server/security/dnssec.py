@@ -37,21 +37,21 @@ class DNSSECValidator:
     def _validate_rrset_with_rrsig(self, msg: dns.message.Message, rrset: dns.rrset.RRset) -> bool:
         covered_type = rrset.rdtype
 
-        rrsig_rrset = [
-            rdata
-            for rr in msg.answer
-            if rr.rdtype == dns.rdatatype.RRSIG and rr.name == rrset.name
-            for rdata in rr
-        ]
+        for rr in msg.answer:
+            if rr.rdtype == dns.rdatatype.RRSIG and rr.name == rrset.name:
+                for rdata in rr:
+                    if rdata.covered == covered_type:
+                        try:
+                            dnskey_rrset = self._get_dnskey(msg.question[0].name)
+                            dns.dnssec.validate(rrset, rdata, {msg.question[0].name: dnskey_rrset})
+                            return True
+                        except Exception as e:
+                            self._logger.warn(f"Validation failed for type {covered_type}: {e}")
+                            return False
 
-        rrsig = next((r for r in rrsig_rrset if r.covered == covered_type), None)
-        if not rrsig:
-            self._logger.warn(f"No RRSIG for {covered_type}")
-            return False
+        self._logger.warn(f"No RRSIG for {covered_type}")
+        return False
 
-        dnskey_rrset = self._get_dnskey(msg.question[0].name)
-        dns.dnssec.validate(rrset, rrsig, {msg.question[0].name: dnskey_rrset})
-        return True
 
     def _get_dnskey(self, name: dns.name.Name):
         try:

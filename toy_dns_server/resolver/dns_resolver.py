@@ -1,7 +1,7 @@
 import socket
 import random
 from typing import Optional, Union
-from dnslib import DNSRecord, EDNS0, RCODE, DNSHeader
+from dnslib import DNSRecord, EDNS0, RCODE, DNSHeader, RR, QTYPE, EDNSOption, DNSLabel
 
 
 from toy_dns_server.log.logger import Logger
@@ -37,8 +37,8 @@ class DNSResolver:
     def resolve(self, original_query: bytes) -> bytes:
         record = DNSRecord.parse(original_query)
         if self._dnssec_validator:
-            record.add_ar(EDNS0(flags="do",udp_len=4096))
-            record.header.ad = 1
+            self._append_edns0(record)
+
 
         query = record.pack()
 
@@ -78,6 +78,17 @@ class DNSResolver:
             q=record.q
         )
         return servfail.pack()
+
+    def _append_edns0(self, record: DNSRecord):
+        rname = record.q.qname
+        opt = EDNS0(rname,
+                    flags="do", # DNSSEC OK
+                    ext_rcode=1, # return extended error codes
+                    udp_len=4096,
+                    version=1, # EDNS version
+                    opts=[EDNSOption(1,b'')] # todo: figure out what is 1 responsible for
+                )
+        record.add_ar(opt)
 
     def _initialize_cache(self, cache_config: CacheConfig):
         if not cache_config.enabled:
