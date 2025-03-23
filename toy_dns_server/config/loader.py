@@ -50,8 +50,13 @@ class ConfigLoader:
         default_config = {}
         file_path = self._default_config_file
         self._logger.debug(f"Reading default configuration file at `{file_path}`...")
+
+        if not os.path.exists(file_path):
+            self._logger.fatal(f"Default configuration file `{file_path}` is missing.")
+            return default_config
+
         try:
-            self._read_yaml(file_path)
+            default_config = self._read_yaml(file_path)
         except FileNotFoundError:
             self._logger.fatal(f"Default configuration file `{file_path}` is missing.")
 
@@ -62,7 +67,7 @@ class ConfigLoader:
 
     def _read_yaml(self, file_path):
         with open(file_path, "r") as f:
-            return yaml.safe_load(f) or {}
+            return yaml.safe_load(f)
 
     def _parse_config(self, merged_config: dict):
         config: ConfigSchema
