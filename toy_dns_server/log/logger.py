@@ -8,6 +8,7 @@ class Logger:
         self.__name = classOrName if isinstance(classOrName, str) else type(classOrName).__name__
         self._logger = base_logger
 
+
     def debug(self, message: str):
         self._logger.log(message, logging.DEBUG, self.__name)
 

@@ -7,5 +7,5 @@ server:
 
     https:
       security:
-        certificate_file: "../scripts/fixtures/localhost.crt"
-        key_file: "../scripts/fixtures/localhost.key"
+        certificate_file: "scripts/certs/localhost.crt"
+        key_file: "scripts/certs/localhost.key"

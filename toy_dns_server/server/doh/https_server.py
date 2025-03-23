@@ -1,10 +1,10 @@
+from posixpath import abspath
 import ssl
 from http.server import ThreadingHTTPServer
 
 from toy_dns_server.log.logger import Logger
 from toy_dns_server.config.schema import DoHHTTPSConfig
 from toy_dns_server.resolver.dns_resolver import DNSResolver
-from toy_dns_server.server.doh.http_handler import DNSOverHTTPHandler
 from toy_dns_server.server.doh.doh_handler import make_doh_handler
 
 class DoHHTTPSServer:
@@ -20,12 +20,17 @@ class DoHHTTPSServer:
 
         self._logger.debug("Wrapping HTTP server with SSL context")
         context = ssl.SSLContext(self._tls_version(config.security.min_tls_version))
+
+        abs_certfile_path = abspath(config.security.certificate_file)
+        abs_keyfile_path = abspath(config.security.key_file)
+        self._logger.debug(f"Loading certificate from {abs_certfile_path}")
+        self._logger.debug(f"Loading key from {abs_keyfile_path}")
+
         context.load_cert_chain(
-            certfile=config.security.certificate_file,
-            keyfile=config.security.key_file
+            certfile=abs_certfile_path,
+            keyfile=abs_keyfile_path
         )
         self._httpd.socket = context.wrap_socket(self._httpd.socket, server_side=True)
-
 
     def run(self):
         self._logger.info(f"Starting DoH HTTPS server on {self._httpd.server_address}")

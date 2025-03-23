@@ -93,11 +93,16 @@ class Bootstraper():
 
     def _monitor_threads(self):
         self._logger.debug("Monitoring threads...")
-        for thread in self._threads:
-            self._logger.debug(f"Checking thread {thread.name}...")
-            if not thread.is_alive():
-                self._logger.error("One of the threads is dead. Stopping bootstraper.")
-                self.stop()
-                break
+        try:
+            while True:
+                for thread in self._threads:
+                    self._logger.debug(f"Checking thread {thread.name}...")
+                    if not thread.is_alive():
+                        self._logger.error("One of the threads is dead. Stopping bootstraper.")
+                        self.stop()
+                        break
 
-            time.sleep(1)
+                time.sleep(1)
+        except KeyboardInterrupt:
+            self._logger.debug("Received KeyboardInterrupt. Stopping thread monitoring.")
+            self.stop()
