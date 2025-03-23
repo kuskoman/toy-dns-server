@@ -4,11 +4,19 @@
 
 server:
   dns:
+    # Enable or disable the DNS server.
+    # Default: true
+    # enabled: false
+
     # Set a custom address for the DNS server.
     # Default: "0.0.0.0:53"
     # address: "127.0.0.1:5353"
 
   doh:
+    # Enable or disable DNS-over-HTTPS.
+    # Default: true
+    # enabled: false
+
     # Change the mode of operation for DoH.
     # Options: "http" (for reverse proxy) or "https" (secure mode with TLS).
     # Default: "https"
@@ -58,9 +66,17 @@ logging:
   # level: "debug"
 
   # Change log file paths.
-  # Default: "/var/log/dns-server-stdout.log" and "/var/log/dns-server-stderr.log"
-  # stdout_log_file: "/custom/logs/dns-stdout.log"
-  # stderr_log_file: "/custom/logs/dns-stderr.log"
+  # Default: "stdout" and "stderr"
+  # stdout_log_file: "/var/log/dns-server-stdout.log"
+  # stderr_log_file: "/var/log/dns-server-stderr.log"
+
+  # Log format.
+  # Default: "[%(asctime)s] [%(name)s] [PID: %(process)d] [%(levelname)s] %(message)s"
+  # log_format: "[%(asctime)s] [%(name)s] [PID: %(process)d] [%(levelname)s] %(message)s"
+
+  # Log date format.
+  # Default: "%Y-%m-%d %H:%M:%S"
+  # date_format: "%Y-%m-%d %H:%M:%S"
 
 metrics:
   # Enable or disable metrics collection.

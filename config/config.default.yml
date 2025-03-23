@@ -4,10 +4,16 @@
 
 server:
   dns:
+    # Enable or disable the DNS server.
+    enabled: true
+
     # Address where the DNS server listens for UDP/TCP queries.
     address: "0.0.0.0:53"
 
   doh:
+    # Enable or disable DNS-over-HTTPS.
+    enabled: true
+
     # Mode of operation for DNS-over-HTTPS:
     # - "https" → Serve DoH over HTTPS with TLS
     # - "http"  → Serve DoH over plain HTTP (useful for reverse proxy setups)
@@ -62,9 +68,14 @@ logging:
   level: "info"
 
   # File paths for logs.
-  stdout_log_file: "/var/log/toy-dns-server-stdout.log"
-  stderr_log_file: "/var/log/toy-dns-server-stderr.log"
+  stdout_log_file: "stdout"
+  stderr_log_file: "stderr"
 
+  # Log format.
+  log_format: "[%(asctime)s] [PID: %(process)d] [%(logger_name)s] [%(levelname)s] %(message)s"
+
+  # Log date format.
+  date_format: "%Y-%m-%d %H:%M:%S"
 metrics:
   # Enable or disable metrics collection.
   enabled: true

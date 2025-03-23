@@ -1,3 +1,9 @@
-from toy_dns_server.config.loader import load_config
+from toy_dns_server.config.loader import ConfigLoader
+from toy_dns_server.log.logger import base_logger, Logger
 
-CONFIG = load_config()
+logger = Logger("main")
+logger.info("Loading configuration...")
+config_loader = ConfigLoader()
+config = config_loader.load_config()
+base_logger.reconfigure_logger(config.logging)
+logger.info("Configuration loaded successfully.")
