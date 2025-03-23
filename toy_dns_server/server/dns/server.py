@@ -3,12 +3,16 @@ import socketserver
 from toy_dns_server.log.logger import Logger
 from toy_dns_server.resolver.dns_resolver import DNSResolver
 from toy_dns_server.server.dns.handler import DNSRequestHandler
-
 from toy_dns_server.config.schema import ConfigSchema
 
 class ThreadedUDPServer(socketserver.ThreadingMixIn, socketserver.UDPServer):
     daemon_threads = True
     allow_reuse_address = True
+
+    def __init__(self, server_address, RequestHandlerClass, resolver: DNSResolver):
+        self.resolver = resolver  # Inject resolver into handler
+        super().__init__(server_address, RequestHandlerClass)
+
 
 class DNSServer:
     _logger: Logger
@@ -23,7 +27,11 @@ class DNSServer:
 
         self._logger = Logger(self)
         self._resolver = DNSResolver(resolver_config)
-        self._server = ThreadedUDPServer((host, port), lambda *args: DNSRequestHandler(self._resolver))
+        self._server = ThreadedUDPServer(
+            (host, port),
+            DNSRequestHandler,
+            self._resolver
+        )
 
     def run(self):
         self._logger.info(f"Starting DNS server on {self._server.server_address}")

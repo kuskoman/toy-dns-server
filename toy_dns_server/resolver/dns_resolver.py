@@ -24,7 +24,8 @@ class DNSResolver:
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
                     sock.settimeout(self._timeout_seconds)
-                    sock.sendto(query, (server, 53))
+                    server_str = str(server)
+                    sock.sendto(query, (server_str, 53))
                     response, _ = sock.recvfrom(4096)
                     return response
             except (socket.timeout, socket.error) as e:

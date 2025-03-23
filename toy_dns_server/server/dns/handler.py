@@ -1,17 +1,12 @@
 import socketserver
 from dnslib import DNSRecord
-
 from toy_dns_server.log.logger import Logger
-
 from toy_dns_server.resolver.dns_resolver import DNSResolver
 
 class DNSRequestHandler(socketserver.BaseRequestHandler):
-    _logger: Logger
-    _resolver: DNSResolver
-
-    def __init__(self, resolver: DNSResolver):
+    def setup(self):
         self._logger = Logger(self)
-        self._resolver = resolver
+        self._resolver: DNSResolver = self.server.resolver
 
     def handle(self):
         self._logger.debug("Handling DNS query")
