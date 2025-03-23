@@ -30,6 +30,3 @@ class DNSRequestHandler(socketserver.BaseRequestHandler):
 
         except Exception as e:
             self.__logger.error(f"Failed to handle DNS query from {client_ip}:{client_port}: {e}")
-
-
-

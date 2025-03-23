@@ -17,7 +17,7 @@ server:
     # Mode of operation for DNS-over-HTTPS:
     # - "https" → Serve DoH over HTTPS with TLS
     # - "http"  → Serve DoH over plain HTTP (useful for reverse proxy setups)
-    mode: "https"
+    mode: "http"
 
     http:
       # Address where DoH over HTTP listens (only used if mode is "http").

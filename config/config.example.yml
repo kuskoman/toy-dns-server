@@ -19,8 +19,8 @@ server:
 
     # Change the mode of operation for DoH.
     # Options: "http" (for reverse proxy) or "https" (secure mode with TLS).
-    # Default: "https"
-    # mode: "http"
+    # Default: "http"
+    # mode: "https"
 
     http:
       # Override the listening address for DoH over HTTP.

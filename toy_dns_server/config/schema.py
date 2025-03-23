@@ -24,6 +24,7 @@ class DoHHTTPSConfig(BaseModel):
 
 
 class DoHConfig(BaseModel):
+    enabled: bool = Field(..., description="Enable DNS-over-HTTPS server")
     mode: Literal["http", "https"] = Field(..., description="Mode: 'http' or 'https'")
     http: DoHHTTPConfig
     https: DoHHTTPSConfig
