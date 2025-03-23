@@ -1,4 +1,5 @@
 import os
+from posixpath import abspath
 import yaml
 from pydantic import ValidationError
 from toy_dns_server.config.schema import ConfigSchema
@@ -9,17 +10,19 @@ from toy_dns_server.log.logger import Logger
 from toy_dns_server.utils.deep_merge import deep_merge
 
 class ConfigLoader:
-    CONFIG_DIR = "config"
-    DEFAULT_CONFIG_FILE = os.path.join(CONFIG_DIR, "config.default.yml")
     _logger: Logger
-    __flags_manager = FlagsManager()
+    _flags_manager = FlagsManager()
+    _default_config_file: str
 
-    def __init__(self):
+    def __init__(self, root_location: str):
         self._logger = Logger(self)
+        default_config_file = os.path.join(root_location, "..", "config", "config.default.yml")
+        self._default_config_file = abspath(default_config_file)
+
 
     def load_config(self):
         self._logger.debug("Getting flags config...")
-        flags_config = self.__flags_manager.get_flags_config()
+        flags_config = self._flags_manager.get_flags_config()
         user_config_file = flags_config.user_config_path
 
         self._logger.debug("Loading default configuration...")
@@ -45,10 +48,15 @@ class ConfigLoader:
 
     def _read_default_config(self):
         default_config = {}
+        file_path = self._default_config_file
+        self._logger.debug(f"Reading default configuration file at `{file_path}`...")
         try:
-            self._read_yaml(self.DEFAULT_CONFIG_FILE)
+            self._read_yaml(file_path)
         except FileNotFoundError:
-            self._logger.fatal(f"Default configuration file `{self.DEFAULT_CONFIG_FILE}` is missing.")
+            self._logger.fatal(f"Default configuration file `{file_path}` is missing.")
+
+        if len(default_config.keys()) == 0:
+            self._logger.error("Default configuration file is empty. Using an empty configuration instead.")
 
         return default_config
 

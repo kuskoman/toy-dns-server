@@ -11,9 +11,11 @@ class Bootstraper():
     _running: bool = False
     _config: ConfigSchema
     _dns_server: DNSServer
+    _root_dir: str
 
-    def __init__(self):
+    def __init__(self, root_dir: str):
         self._logger = Logger(self)
+        self._root_dir = root_dir
         self._logger.info("Bootstraper initialized.")
 
     def run(self):
@@ -22,8 +24,7 @@ class Bootstraper():
             raise RuntimeError("Bootstraper is already running.")
 
         self._logger.info("Running bootstraper...")
-        config_loader = ConfigLoader()
-        self._config = config_loader.load_config()
+        self._load_config()
 
         self._configure_logging()
         self._start_dns_server()
@@ -42,6 +43,15 @@ class Bootstraper():
             self.__doh_server.stop()
 
         self._logger.info("Bootstraper stopped.")
+
+    def _load_config(self):
+        try:
+            config_loader = ConfigLoader(self._root_dir)
+            self._config = config_loader.load_config()
+        except Exception as e:
+            self._logger.error(f"Failed to load configuration: {e}")
+            base_logger.handle_configuration_error()
+            raise e
 
     def _start_dns_server(self):
         if self._config.server.dns is None:
