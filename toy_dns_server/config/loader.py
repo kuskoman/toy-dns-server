@@ -34,15 +34,13 @@ class ConfigLoader:
             with open(self.DEFAULT_CONFIG_FILE, "r") as f:
                 default_config = yaml.safe_load(f) or {}
         except FileNotFoundError:
-            self.__logger.error(f"Default configuration file `{self.DEFAULT_CONFIG_FILE}` is missing.")
-            raise RuntimeError("Default configuration file is missing.")
+            self.__logger.fatal(f"Default configuration file `{self.DEFAULT_CONFIG_FILE}` is missing.")
 
         user_config = {}
         if (user_config_path is None) or (user_config_path == ""):
             self.__logger.warn("No user configuration file provided. Using default configuration.")
         elif not os.path.exists(user_config_path):
-            self.__logger.error(f"User configuration file `{user_config_path}` is missing.")
-            raise RuntimeError("User configuration file is missing.")
+            self.__logger.fatal(f"User configuration file `{user_config_path}` is missing.")
         else:
             self.__logger.debug(f"User configuration file found at `{user_config_path}`.")
             with open(user_config_path, "r") as f:
@@ -58,7 +56,6 @@ class ConfigLoader:
             config = ConfigSchema(**merged_config)
             self.__logger.info("Configuration validated successfully.")
         except ValidationError as e:
-            self.__logger.error(f"Configuration validation failed:\n{e}")
-            raise
+            self.__logger.fatal(f"Configuration validation failed:\n{e}")
 
         return config

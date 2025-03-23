@@ -19,3 +19,7 @@ class Logger:
 
     def error(self, message: str):
         self.__logger.log(message, logging.ERROR, self.__name)
+
+    def fatal(self, message: str):
+        self.__logger.log(message, logging.CRITICAL, self.__name)
+        raise RuntimeError(message)
