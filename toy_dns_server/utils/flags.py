@@ -1,6 +1,5 @@
 import argparse
 import os
-import platform
 
 class FlagsConfig:
     default_config_path = None
