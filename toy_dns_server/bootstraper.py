@@ -1,4 +1,5 @@
 from threading import Thread
+import time
 
 from toy_dns_server.config.loader import ConfigLoader, ConfigSchema
 from toy_dns_server.log.logger import Logger
@@ -12,6 +13,7 @@ class Bootstraper():
     _config: ConfigSchema
     _dns_server: DNSServer
     _root_dir: str
+    _threads: list[Thread] = []
 
     def __init__(self, root_dir: str):
         self._logger = Logger(self)
@@ -31,6 +33,7 @@ class Bootstraper():
         self._start_doh_server()
 
         self._logger.info("Bootstraper finished.")
+        self._monitor_threads()
 
     def stop(self):
         self._logger.info("Stopping bootstraper...")
@@ -66,6 +69,7 @@ class Bootstraper():
 
         thread = Thread(target=self.__dns_server.run)
         thread.start()
+        self._threads.append(thread)
 
     def _start_doh_server(self):
         if self._config.server.doh is None:
@@ -82,6 +86,18 @@ class Bootstraper():
 
             thread = Thread(target=self.__doh_server.run)
             thread.start()
+            self._threads.append(thread)
 
     def _configure_logging(self):
         base_logger.reconfigure_logger(self._config.logging)
+
+    def _monitor_threads(self):
+        self._logger.debug("Monitoring threads...")
+        for thread in self._threads:
+            self._logger.debug(f"Checking thread {thread.name}...")
+            if not thread.is_alive():
+                self._logger.error("One of the threads is dead. Stopping bootstraper.")
+                self.stop()
+                break
+
+            time.sleep(1)
