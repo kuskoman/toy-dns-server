@@ -39,20 +39,22 @@ class ConfigLoader:
             self._logger.fatal(f"User configuration file `{user_config_path}` is missing.")
         else:
             self._logger.debug(f"User configuration file found at `{user_config_path}`.")
-            with open(user_config_path, "r") as f:
-                user_config = yaml.safe_load(f) or {}
+            user_config = self._read_yaml(user_config_path)
 
         return user_config
 
     def _read_default_config(self):
         default_config = {}
         try:
-            with open(self.DEFAULT_CONFIG_FILE, "r") as f:
-                default_config = yaml.safe_load(f) or {}
+            self._read_yaml(self.DEFAULT_CONFIG_FILE)
         except FileNotFoundError:
             self._logger.fatal(f"Default configuration file `{self.DEFAULT_CONFIG_FILE}` is missing.")
 
         return default_config
+
+    def _read_yaml(self, file_path):
+        with open(file_path, "r") as f:
+            return yaml.safe_load(f) or {}
 
     def _parse_config(self, merged_config: dict):
         config: ConfigSchema
