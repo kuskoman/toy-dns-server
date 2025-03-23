@@ -1,4 +1,5 @@
 import os
+import sys
 import yaml
 from pydantic import ValidationError
 from toy_dns_server.config.schema import ConfigSchema
@@ -8,14 +9,15 @@ from toy_dns_server.logging.logger import logger, reconfigure_logger, flush_logs
 CONFIG_DIR = "config"
 DEFAULT_CONFIG_FILE = os.path.join(CONFIG_DIR, "config.default.yml")
 
+def fatal_exit():
+    sys.exit(1)
+
 @catch_exceptions
 def load_config():
-    """Loads and validates the configuration from YAML files."""
     flags = parse_flags()
     user_config_file = flags["config"]
 
     logger.info("Loading default configuration...")
-
     try:
         with open(DEFAULT_CONFIG_FILE, "r") as f:
             default_config = yaml.safe_load(f) or {}
@@ -23,11 +25,11 @@ def load_config():
         logger.error(f"Default configuration file `{DEFAULT_CONFIG_FILE}` is missing.")
         raise
 
-    logger.info("Default configuration loaded successfully.")
+    logger.info("Default configuration loaded.")
 
     user_config = {}
     if os.path.exists(user_config_file):
-        logger.info(f"Loading user configuration from `{user_config_file}`...")
+        logger.info(f"Loading user config from `{user_config_file}`...")
         with open(user_config_file, "r") as f:
             user_config = yaml.safe_load(f) or {}
 
@@ -41,9 +43,11 @@ def load_config():
         raise
 
     reconfigure_logger(config)
-    logger.info("Logger reconfigured with user settings.")
+    logger.info("Logger reconfigured with final config.")
 
     flush_logs(success=True)
     return config
 
-CONFIG = load_config()
+
+
+CONFIG = None
