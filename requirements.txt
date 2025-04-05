@@ -3,6 +3,7 @@ anyio==4.8.0
 cachetools==5.5.2
 click==8.1.8
 colorama==0.4.6
+dnslib==0.9.26
 dnspython==2.7.0
 fastapi==0.115.11
 h11==0.14.0

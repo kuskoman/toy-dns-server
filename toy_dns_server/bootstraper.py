@@ -1,4 +1,4 @@
-from threading import Thread
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
 from toy_dns_server.config.loader import ConfigLoader, ConfigSchema
@@ -13,14 +13,22 @@ class Bootstraper():
     _config: ConfigSchema
     _dns_server: DNSServer
     _root_dir: str
-    _threads: list[Thread] = []
+    _executor: ThreadPoolExecutor
+    _futures: list = []
 
     def __init__(self, root_dir: str):
         self._logger = Logger(self)
         self._root_dir = root_dir
+        self._executor = ThreadPoolExecutor(max_workers=2)  # One for DNS, one for DoH
         self._logger.info("Bootstraper initialized.")
 
     def run(self):
+        """
+        Run the bootstraper and blocks execution until the bootstraper is stopped.
+
+        Raises:
+            RuntimeError: If the bootstraper is already running.
+        """
         if self._running:
             self._logger.fatal("Bootstraper is already running.")
             raise RuntimeError("Bootstraper is already running.")
@@ -45,6 +53,8 @@ class Bootstraper():
             self._logger.debug("Stopping DoH server...")
             self.__doh_server.stop()
 
+        self._logger.debug("Shutting down thread pool executor...")
+        self._executor.shutdown(wait=True)
         self._logger.info("Bootstraper stopped.")
 
     def _load_config(self):
@@ -67,9 +77,8 @@ class Bootstraper():
         self._logger.info("Starting DNS server...")
         self.__dns_server = DNSServer(self._config)
 
-        thread = Thread(target=self.__dns_server.run)
-        thread.start()
-        self._threads.append(thread)
+        future = self._executor.submit(self.__dns_server.run)
+        self._futures.append(future)
 
     def _start_doh_server(self):
         if self._config.server.doh is None:
@@ -84,9 +93,8 @@ class Bootstraper():
             self._logger.info("Starting DoH server...")
             self.__doh_server = DoHServer(self._config)
 
-            thread = Thread(target=self.__doh_server.run)
-            thread.start()
-            self._threads.append(thread)
+            future = self._executor.submit(self.__doh_server.run)
+            self._futures.append(future)
 
     def _configure_logging(self):
         base_logger.reconfigure_logger(self._config.logging)
@@ -94,15 +102,16 @@ class Bootstraper():
     def _monitor_threads(self):
         self._logger.debug("Monitoring threads...")
         try:
-            while True:
-                for thread in self._threads:
-                    self._logger.debug(f"Checking thread {thread.name}...")
-                    if not thread.is_alive():
-                        self._logger.error("One of the threads is dead. Stopping bootstraper.")
-                        self.stop()
-                        break
-
-                time.sleep(1)
+            for future in as_completed(self._futures):
+                try:
+                    future.result()  # This will raise an exception if the thread failed
+                except Exception as e:
+                    self._logger.error(f"One of the threads failed: {e}")
+                    self.stop()
+                    return
         except KeyboardInterrupt:
             self._logger.debug("Received KeyboardInterrupt. Stopping thread monitoring.")
             self.stop()
+
+        finally:
+            self._logger.debug("Thread monitoring finished.")

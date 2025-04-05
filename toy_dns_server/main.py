@@ -16,9 +16,10 @@ def main():
     main_file_path = os.path.abspath(__file__)
     main_file_dir = os.path.dirname(main_file_path)
     bootstraper = Bootstraper(main_file_dir)
+    signal.signal(signal.SIGINT, lambda signum, frame: handle_sigint(bootstraper))
+
     bootstraper.run()
 
-    signal.signal(signal.SIGINT, lambda signum, frame: handle_sigint(bootstraper))
 
 
 if __name__ == "__main__":
