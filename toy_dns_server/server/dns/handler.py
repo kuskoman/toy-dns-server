@@ -2,6 +2,10 @@ import socketserver
 from dnslib import DNSRecord
 from toy_dns_server.log.logger import Logger
 from toy_dns_server.resolver.dns_resolver import DNSResolver
+from toy_dns_server.metrics.metrics import (
+    dns_query_counter,
+    dns_query_duration,
+) # todo: implement
 
 class DNSRequestHandler(socketserver.BaseRequestHandler):
     def setup(self):
