@@ -48,7 +48,11 @@ class DNSResolver:
         if cached_response:
             return self._return_cached_response(cached_response, record)
 
-        return self._query_upstream(record, query)
+        upstream_response = self._query_upstream(record, query)
+        print(f"Upstream response: {upstream_response}")
+        record = DNSRecord.parse(upstream_response).pack()
+        print(f"Record: {record}")
+        return upstream_response
 
 
     def _query_upstream(self, record: DNSRecord, packed_query: bytes) -> bytes:
@@ -65,13 +69,14 @@ class DNSResolver:
                     sock.sendto(packed_query, (str(server), 53))
                     response, _ = sock.recvfrom(4096)
 
-                    if not self._dnssec_validator.validate(response):
-                        self._logger.warn("DNSSEC validation failed")
-                        failed_dnssec += 1
-                        dnssec_validation_counter.labels("failed").inc()
-                        continue
-                    else:
-                        dnssec_validation_counter.labels("success").inc()
+                    if self._dnssec_validator:
+                        if not self._dnssec_validator.validate(response):
+                            self._logger.warn("DNSSEC validation failed")
+                            failed_dnssec += 1
+                            dnssec_validation_counter.labels("failed").inc()
+                            continue
+                        else:
+                            dnssec_validation_counter.labels("success").inc()
 
 
                     self._set_to_cache(record, response)
