@@ -49,9 +49,6 @@ class DNSResolver:
             return self._return_cached_response(cached_response, record)
 
         upstream_response = self._query_upstream(record, query)
-        print(f"Upstream response: {upstream_response}")
-        record = DNSRecord.parse(upstream_response).pack()
-        print(f"Record: {record}")
         return upstream_response
 
 
