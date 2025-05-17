@@ -65,14 +65,14 @@ class DNSResolver:
                     sock.sendto(packed_query, (str(server), 53))
                     response, _ = sock.recvfrom(4096)
 
-                    if self._dnssec_validator:
-                        if not self._dnssec_validator.validate(response):
-                            self._logger.warn("DNSSEC validation failed")
-                            failed_dnssec += 1
-                            dnssec_validation_counter.inc(result="failed")
-                            continue
-                        else:
-                            dnssec_validation_counter.inc(result="success")
+                    if not self._dnssec_validator.validate(response):
+                        self._logger.warn("DNSSEC validation failed")
+                        failed_dnssec += 1
+                        dnssec_validation_counter.labels("failed").inc()
+                        continue
+                    else:
+                        dnssec_validation_counter.labels("success").inc()
+
 
                     self._set_to_cache(record, response)
                     return response
