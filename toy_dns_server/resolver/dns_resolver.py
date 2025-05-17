@@ -98,8 +98,6 @@ class DNSResolver:
         cached.header.id = original.header.id
         return cached.pack()
 
-
-
     def _append_edns0(self, record: DNSRecord):
         rname = record.q.qname
         opt = EDNS0(rname,

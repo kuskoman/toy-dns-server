@@ -1,44 +1,42 @@
 import socketserver
+import time
+from dnslib import DNSRecord
 
 from toy_dns_server.log.logger import Logger
 from toy_dns_server.resolver.dns_resolver import DNSResolver
-from toy_dns_server.server.dns.handler import DNSRequestHandler
-from toy_dns_server.config.schema import ConfigSchema
-
-class ThreadedUDPServer(socketserver.ThreadingMixIn, socketserver.UDPServer):
-    daemon_threads = True
-    allow_reuse_address = True
-
-    def __init__(self, server_address, RequestHandlerClass, resolver: DNSResolver):
-        self.resolver = resolver  # Inject resolver into handler
-        super().__init__(server_address, RequestHandlerClass)
+from toy_dns_server.metrics.metrics import (
+    dns_query_counter,
+    dns_query_duration,
+)
 
 
-class DNSServer:
-    _logger: Logger
-    _resolver: DNSResolver
-    _server: ThreadedUDPServer
-
-    def __init__(self, config: ConfigSchema):
-        dns_server_config = config.server.dns
-        resolver_config = config.resolver
-        host, port_str = dns_server_config.address.split(":")
-        port = int(port_str)
-
+class DNSRequestHandler(socketserver.BaseRequestHandler):
+    def setup(self):
         self._logger = Logger(self)
-        self._resolver = DNSResolver(resolver_config)
-        self._server = ThreadedUDPServer(
-            (host, port),
-            DNSRequestHandler,
-            self._resolver
-        )
+        self._resolver: DNSResolver = self.server.resolver
 
-    def run(self):
-        self._logger.info(f"Starting DNS server on {self._server.server_address}")
-        self._server.serve_forever()
+    def handle(self):
+        start_time = time.time()
+        data, socket_instance = self.request
+        client_ip, _ = self.client_address
 
-    def stop(self):
-        self._logger.info("Stopping DNS server")
-        self._server.shutdown()
-        self._server.server_close()
-        self._logger.info("DNS server stopped")
+        self._logger.debug("Handling DNS query")
+        self._logger.debug(f"Received DNS query from {client_ip}")
+
+        try:
+            dns_request = DNSRecord.parse(data)
+            self._logger.debug(f"Parsed DNS request: {dns_request.q.qname}")
+
+            response_data = self._resolver.resolve(data)
+            socket_instance.sendto(response_data, self.client_address)
+            self._logger.info(f"Responded to {client_ip}")
+
+            self._record_metrics(client_ip, start_time)
+
+        except Exception as e:
+            self._logger.error(f"Failed to handle DNS query from {client_ip}: {e}")
+            self._record_metrics(client_ip, start_time)
+
+    def _record_metrics(self, source: str, start_time: float):
+        dns_query_counter.labels(protocol="udp", source=source).inc()
+        dns_query_duration.observe(time.time() - start_time)

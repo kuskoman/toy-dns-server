@@ -5,6 +5,9 @@ import dns.rdatatype
 import dns.resolver
 
 from toy_dns_server.log.logger import Logger
+from toy_dns_server.metrics.metrics import (
+    dnssec_validation_counter
+)
 
 class DNSSECValidator:
     """This DNSSECValidator is more of an example, than a production-ready implementation.
@@ -25,14 +28,21 @@ class DNSSECValidator:
                     continue
 
                 if not self._validate_rrset_with_rrsig(msg, rrset):
+                    self._observe_metrics(False)
                     return False
 
             self._logger.info("DNSSEC validation successful")
+            self._observe_metrics("success")
             return True
 
         except Exception as e:
             self._logger.warn(f"DNSSEC validation failed: {e}")
+            self._observe_metrics(False)
             return False
+
+    def _observe_metrics(self, validation_result: bool):
+        result = "valid" if validation_result else "invalid"
+        dnssec_validation_counter.labels(result=result).inc()
 
     def _validate_rrset_with_rrsig(self, msg: dns.message.Message, rrset: dns.rrset.RRset) -> bool:
         covered_type = rrset.rdtype
