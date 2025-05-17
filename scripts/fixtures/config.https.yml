@@ -7,5 +7,9 @@ server:
         certificate_file: "scripts/certs/localhost.crt"
         key_file: "scripts/certs/localhost.key"
 
+resolver:
+  security:
+    dnssec_validation: false
+
 logging:
   level: "info"

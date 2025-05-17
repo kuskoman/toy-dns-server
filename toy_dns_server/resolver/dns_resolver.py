@@ -104,7 +104,9 @@ class DNSResolver:
         rname = record.q.qname
         opt = EDNS0(rname,
                     flags="do", # DNSSEC OK
-                    ext_rcode=1, # return extended error codes
+                    # ext_rcode=0, # no extended error codes
+                    # ext_rcode=1, # return extended error codes
+                    ext_rcode=1,
                     udp_len=4096,
                     version=1, # EDNS version
                     opts=[EDNSOption(1,b'')] # todo: figure out what is 1 responsible for
