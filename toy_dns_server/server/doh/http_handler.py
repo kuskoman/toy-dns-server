@@ -16,6 +16,10 @@ class DNSOverHTTPHandler(BaseHTTPRequestHandler):
     def __init__(self, request, client_address, server):
         self._logger = Logger(self)
         super().__init__(request, client_address, server)
+        
+    def log_message(self, format, *args):
+        """Override the default log_message to use our custom logger."""
+        self._logger.info(format % args)
 
     def do_POST(self):
         start_time = time.time()
