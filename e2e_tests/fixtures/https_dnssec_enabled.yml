@@ -1,0 +1,42 @@
+# HTTPS enabled with DNSSEC enabled configuration
+server:
+  dns:
+    enabled: false
+  
+  doh:
+    enabled: true
+    mode: "https"
+    
+    https:
+      listen_address: "127.0.0.1:8444"
+      security:
+        certificate_file: "scripts/certs/localhost.crt"
+        key_file: "scripts/certs/localhost.key"
+        min_tls_version: "TLS12"
+        max_tls_version: "TLS13"
+
+resolver:
+  upstream:
+    servers:
+      - "8.8.8.8"
+      - "1.1.1.1"
+      - "9.9.9.9"
+    timeout_ms: 2000
+
+  cache:
+    enabled: true
+    ttl_seconds: auto
+    max_entries: 1000
+
+  security:
+    dnssec_validation: true
+
+logging:
+  level: "info"
+  stdout_log_file: "stdout"
+  stderr_log_file: "stderr"
+  log_format: "[%(asctime)s] [PID: %(process)d] [%(logger_name)s] [%(levelname)s] %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"
+
+metrics:
+  enabled: false

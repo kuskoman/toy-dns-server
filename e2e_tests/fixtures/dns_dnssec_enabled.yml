@@ -1,0 +1,34 @@
+# DNS enabled with DNSSEC enabled configuration
+server:
+  dns:
+    enabled: true
+    address: "127.0.0.1:5353"
+  
+  doh:
+    enabled: false
+
+resolver:
+  upstream:
+    servers:
+      - "8.8.8.8"
+      - "1.1.1.1"
+      - "9.9.9.9"
+    timeout_ms: 2000
+
+  cache:
+    enabled: true
+    ttl_seconds: auto
+    max_entries: 1000
+
+  security:
+    dnssec_validation: true
+
+logging:
+  level: "info"
+  stdout_log_file: "stdout"
+  stderr_log_file: "stderr"
+  log_format: "[%(asctime)s] [PID: %(process)d] [%(logger_name)s] [%(levelname)s] %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"
+
+metrics:
+  enabled: false
