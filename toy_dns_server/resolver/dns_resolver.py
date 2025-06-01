@@ -1,6 +1,8 @@
 import socket
 import random
-from typing import Optional, Union
+import asyncio
+import concurrent.futures
+from typing import Optional, Union, Tuple
 from dnslib import DNSRecord, EDNS0, RCODE, DNSHeader, RR, QTYPE, EDNSOption, DNSLabel
 
 
@@ -40,19 +42,79 @@ class DNSResolver:
 
     def resolve(self, original_query: bytes) -> bytes:
         record = DNSRecord.parse(original_query)
-        if self._dnssec_validator:
-            self._append_edns0(record)
-
-        query = record.pack()
         cached_response = self._get_from_cache(record)
         if cached_response:
             return self._return_cached_response(cached_response, record)
 
-        upstream_response = self._query_upstream(record, query)
-        return upstream_response
+        if self._dnssec_validator:
+            return self._resolve_with_dnssec_fallback(record)
+        else:
+            return self._query_upstream(record, record.pack(), validate_dnssec=False)
 
 
-    def _query_upstream(self, record: DNSRecord, packed_query: bytes) -> bytes:
+    async def _query_server_async(self, server: str, packed_query: bytes, timeout: float):
+        try:
+            loop = asyncio.get_event_loop()
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.settimeout(timeout)
+
+            await loop.sock_sendto(sock, packed_query, (str(server), 53))
+            response, _ = await loop.sock_recvfrom(sock, 4096)
+            sock.close()
+            return response
+        except (socket.timeout, socket.error, asyncio.TimeoutError) as e:
+            self._logger.warn(f"Failed to get async response from server {server}: {e}")
+            return None
+
+    def _resolve_with_dnssec_fallback(self, record: DNSRecord) -> bytes:
+        regular_record = DNSRecord.parse(record.pack())
+        dnssec_record = DNSRecord.parse(record.pack())
+        self._append_edns0(dnssec_record)
+
+        regular_query = regular_record.pack()
+        dnssec_query = dnssec_record.pack()
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            server = random.choice(self._upstream_servers)
+
+            tasks = [
+                loop.create_task(self._query_server_async(server, regular_query, self._timeout_seconds)),
+                loop.create_task(self._query_server_async(server, dnssec_query, self._timeout_seconds))
+            ]
+
+            done, pending = loop.run_until_complete(asyncio.wait(
+                tasks,
+                timeout=self._timeout_seconds,
+                return_when=asyncio.FIRST_COMPLETED
+            ))
+
+            for task in pending:
+                task.cancel()
+
+            if not done:
+                return self._build_servfail_response(record, 0, len(self._upstream_servers))
+
+            for task in done:
+                response = task.result()
+                if not response:
+                    continue
+
+                try:
+                    response_record = DNSRecord.parse(response)
+                    if response_record and len(response_record.rr) > 0:
+                        self._set_to_cache(record, response)
+                        return response
+                except Exception as e:
+                    self._logger.warn(f"Failed to parse response: {e}")
+
+            return self._query_upstream(record, regular_query, validate_dnssec=False)
+        finally:
+            loop.close()
+
+    def _query_upstream(self, record: DNSRecord, packed_query: bytes, validate_dnssec: bool = True) -> bytes:
         failed_dnssec = 0
         failed_to_resolve = 0
         servers = self._upstream_servers[:]
@@ -66,7 +128,7 @@ class DNSResolver:
                     sock.sendto(packed_query, (str(server), 53))
                     response, _ = sock.recvfrom(4096)
 
-                    if self._dnssec_validator:
+                    if validate_dnssec and self._dnssec_validator:
                         if not self._dnssec_validator.validate(response):
                             self._logger.warn("DNSSEC validation failed")
                             failed_dnssec += 1
@@ -74,7 +136,6 @@ class DNSResolver:
                             continue
                         else:
                             dnssec_validation_counter.labels("success").inc()
-
 
                     self._set_to_cache(record, response)
                     return response
